@@ -137,3 +137,16 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# 忽略所有 Android 编译生成的文件夹
+android/app/build/
+android/build/
+build/
+
+# 忽略所有安装包和库文件
+*.apk
+*.so
+.gradle/
+.idea/
+*.iml
+local.properties

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">NotYet</string>
+    <string name="accessibility_service_description">先别NotYet 在你打开短视频时短暂介入，提示你做一个微活动。不读取任何内容或隐私数据。</string>
+</resources>

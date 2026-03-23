@@ -1,0 +1,22 @@
+# ninja log v5
+3	52	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+65	5922	7951162747720638	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/d3f5a907402b283839faee79b92c069c/source/codegen/jni/react/renderer/components/safeareacontext/States.cpp.o	21e84179a023471e
+41	7213	7951162760739341	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/d5b51395681e76574d151f4aaeebe7ad/codegen/jni/react/renderer/components/safeareacontext/EventEmitters.cpp.o	7023a8835070be31
+78	8159	7951162770174808	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/2ad1def7ea7b2c920d0ead3e6a11f827/build/generated/source/codegen/jni/safeareacontext-generated.cpp.o	89aaab8f77196f38
+4	9509	7951162783611395	CMakeFiles/appmodules.dir/OnLoad.cpp.o	c21f647928594a11
+17	9676	7951162785424282	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/60fc55c4851ac69baf2b1e18e22680fd/cpp/react/renderer/components/safeareacontext/RNCSafeAreaViewState.cpp.o	52f10195a3d76432
+91	9972	7951162788430009	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/d5b51395681e76574d151f4aaeebe7ad/codegen/jni/react/renderer/components/safeareacontext/ShadowNodes.cpp.o	6713ee0df934378e
+32	10571	7951162794300171	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/d3f5a907402b283839faee79b92c069c/source/codegen/jni/react/renderer/components/safeareacontext/Props.cpp.o	f982e6d2863bc2c8
+54	11455	7951162803165305	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/77d6779827a1283a68199e101bf4de97/jni/react/renderer/components/safeareacontext/ComponentDescriptors.cpp.o	2f4a8cd51a06bc73
+24	11501	7951162803685403	safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir/6bca7658dff7097009a441875b1d6312/react/renderer/components/safeareacontext/RNCSafeAreaViewShadowNode.cpp.o	a5549ea36b3f7e4e
+11502	11902	7951162807719712	D:/DF/notyet/NotYet/android/app/build/intermediates/cxx/Debug/3k4q5a53/obj/armeabi-v7a/libreact_codegen_safeareacontext.so	ce4e1903ef58a6fb
+10	12587	7951162814344954	CMakeFiles/appmodules.dir/D_/DF/notyet/NotYet/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	7ca74b816c0c9a29
+12588	12813	7951162816858764	D:/DF/notyet/NotYet/android/app/build/intermediates/cxx/Debug/3k4q5a53/obj/armeabi-v7a/libappmodules.so	5a14daacfacfdca
+3	114	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+4	87	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+3	69	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+3	64	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+2	48	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+2	57	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+1	45	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95
+2	51	0	D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/armeabi-v7a/CMakeFiles/cmake.verify_globs	c3754ceb3e70ba95

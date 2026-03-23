@@ -1,0 +1,6 @@
+D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/x86/CMakeFiles/appmodules.dir
+D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/x86/CMakeFiles/edit_cache.dir
+D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/x86/CMakeFiles/rebuild_cache.dir
+D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/x86/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
+D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/x86/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
+D:/DF/notyet/NotYet/android/app/.cxx/Debug/3k4q5a53/x86/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir
