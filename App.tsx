@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Dimensions, StatusBar, Animated, Platform, NativeModules,
-  useColorScheme, SafeAreaView, TextInput, Modal, I18nManager,
+  useColorScheme, SafeAreaView, TextInput, Modal, I18nManager, Image,
 } from 'react-native';
 import { NativeModules as NM } from 'react-native';
 
@@ -11,10 +11,23 @@ const { width: SW } = Dimensions.get('window');
 
 // ─── LANGUAGE ───
 const isZh = () => {
-  const loc = Platform.OS === 'android'
-    ? require('react-native').NativeModules.I18nManager?.localeIdentifier || 'en'
-    : 'zh';
-  return loc.startsWith('zh');
+  try {
+    if (Platform.OS === 'android') {
+      // Android: read from AccessibilityModule.getConstants().systemLanguage
+      const lang = NativeModules.AccessibilityModule?.systemLanguage || '';
+      return lang.toLowerCase().startsWith('zh');
+    } else {
+      // iOS: read from SettingsManager
+      const settings = NativeModules.SettingsManager?.settings;
+      const locale =
+        settings?.AppleLocale ||
+        settings?.AppleLanguages?.[0] ||
+        '';
+      return locale.toLowerCase().startsWith('zh');
+    }
+  } catch {
+    return false;
+  }
 };
 const ZH = isZh();
 
@@ -102,8 +115,8 @@ const S = {
   pick_cta_partial: (rem:number) => ZH ? `再选 ${rem} 个` : `Pick ${rem} more`,
   pick_cta_done: ZH ? '确认我的微活动 →' : 'Confirm activities →',
   categories: ZH
-    ? ['感官观察','身体活动','创意想象','记忆学习','创作','微整理','社交']
-    : ['Sensory','Movement','Creative','Memory','Writing','Tidy','Social'],
+    ? ['感官观察','身体活动','记忆学习','微整理','社交']
+    : ['Sensory','Movement','Memory','Tidy','Social'],
 
   apps_tag:      ZH ? '选择要拦截的应用' : 'APPS TO INTERCEPT',
   apps_title:    ZH ? '守护哪些 App？' : 'Which apps to guard?',
@@ -162,6 +175,22 @@ const S = {
   ],
 };
 
+// ─── APP LOGO — uses local image ───
+const logoImage = require('./src/assets/app_logo.png');
+
+function AppLogo({ size = 64, light = false }: { size?: number; light?: boolean }) {
+  const w = size * 0.58;
+  const h = size;
+  return (
+    <View style={{ marginBottom: 20, opacity: light ? 0.9 : 1 }}>
+      <Image
+        source={logoImage}
+        style={{ width: w, height: h, resizeMode: 'contain' }}
+      />
+    </View>
+  );
+}
+
 // ─── ACTIVITIES ───
 type Activity = { id:string; category:string; icon:string; label:string; desc:string; duration:string; color:string; custom?:boolean };
 
@@ -169,25 +198,15 @@ const ACTIVITIES: Activity[] = ZH ? [
   { id:'s1', category:'感官观察', icon:'🪟', label:'寻找5种颜色',  desc:'看窗外，找出5种不同颜色的物体',      duration:'1分钟', color:'#7A9E82' },
   { id:'s2', category:'感官观察', icon:'👂', label:'分辨3种声音',  desc:'听周围的声音，辨认至少3种来源',       duration:'1分钟', color:'#7A8E9E' },
   { id:'s3', category:'感官观察', icon:'☁️', label:'看云的形状',   desc:'观察天空或云，看它像什么',           duration:'1分钟', color:'#8A9EAE' },
-  { id:'s4', category:'感官观察', icon:'🔍', label:'发现新细节',   desc:'在房间里找一个以前没注意的小细节',   duration:'1分钟', color:'#9E9A7A' },
   { id:'s5', category:'感官观察', icon:'🧘', label:'闭眼30秒',    desc:'闭眼30秒，然后说出你听到了什么',     duration:'1分钟', color:'#7A9E9A' },
   { id:'b1', category:'身体活动', icon:'🏋️', label:'10次深蹲',   desc:'慢慢做10-20次深蹲，感受腿部发力',    duration:'2分钟', color:'#9E7A7A' },
   { id:'b2', category:'身体活动', icon:'🤸', label:'拉伸1分钟',   desc:'活动肩、颈或背，感受身体舒展',        duration:'1分钟', color:'#9E8A7A' },
-  { id:'b3', category:'身体活动', icon:'🚶', label:'走动2分钟',   desc:'起身，随意走几步，活动一下',          duration:'2分钟', color:'#7A8E9E' },
   { id:'b4', category:'身体活动', icon:'🦩', label:'单脚平衡',    desc:'单脚站立30秒，锻炼平衡感',           duration:'1分钟', color:'#9E7A8A' },
   { id:'b5', category:'身体活动', icon:'🌬️', label:'深呼吸10次', desc:'慢慢呼吸10次，4秒吸，6秒呼',         duration:'2分钟', color:'#7C9E7A' },
-  { id:'c1', category:'创意想象', icon:'📖', label:'改写一个结局', desc:'给你最近看的故事想一个新结局',        duration:'3分钟', color:'#8E7A9E' },
-  { id:'c2', category:'创意想象', icon:'🦸', label:'设计一个角色', desc:'想象一个新的人物设定，越奇特越好',    duration:'3分钟', color:'#9E7A9A' },
-  { id:'c3', category:'创意想象', icon:'✍️', label:'编一个小故事', desc:'用3句话编一个完整的小故事',          duration:'3分钟', color:'#9E9A7A' },
-  { id:'c4', category:'创意想象', icon:'💡', label:'想一个新发明', desc:'想象一个新发明，它能解决什么问题',    duration:'3分钟', color:'#7A9E8E' },
   { id:'m1', category:'记忆学习', icon:'🧠', label:'回忆昨天读的', desc:'回忆昨天看到或读到的一件事',         duration:'2分钟', color:'#9E8A7A' },
   { id:'m2', category:'记忆学习', icon:'📚', label:'复述一个知识', desc:'用自己的话说出一个你记得的知识点',   duration:'2分钟', color:'#7A8A9E' },
   { id:'m3', category:'记忆学习', icon:'🔤', label:'想5个英文单词',desc:'回忆或想出5个有趣的英文单词',        duration:'2分钟', color:'#8E9E7A' },
   { id:'m4', category:'记忆学习', icon:'🎵', label:'回忆一段歌词', desc:'试着完整回忆一首歌的某一段歌词',     duration:'2分钟', color:'#9E7A7A' },
-  { id:'w1', category:'创作',    icon:'🖊️', label:'写一句日记',  desc:'用一句话记录此刻的状态或想法',        duration:'2分钟', color:'#9E7A8A' },
-  { id:'w2', category:'创作',    icon:'❓', label:'写一个问题',   desc:'写下一个想以后深入研究的问题',        duration:'1分钟', color:'#7A9EAE' },
-  { id:'w3', category:'创作',    icon:'😊', label:'设计新表情',   desc:'用文字或简单符号设计一个新表情',      duration:'2分钟', color:'#AE9E7A' },
-  { id:'w4', category:'创作',    icon:'🎨', label:'画一个涂鸦',   desc:'随手画一个小涂鸦，不限主题',         duration:'3分钟', color:'#7A9E82' },
   { id:'o1', category:'微整理',  icon:'🗂️', label:'整理5件物品', desc:'把桌上随意摆放的5件东西放好',         duration:'2分钟', color:'#9E9A7A' },
   { id:'o2', category:'微整理',  icon:'🖥️', label:'清理桌面文件',desc:'删掉或归档电脑桌面上的旧文件',        duration:'3分钟', color:'#7A8E9E' },
   { id:'o3', category:'微整理',  icon:'📚', label:'把书摆整齐',   desc:'把旁边的书或物品重新摆放整齐',        duration:'1分钟', color:'#9E8A7A' },
@@ -199,25 +218,15 @@ const ACTIVITIES: Activity[] = ZH ? [
   { id:'s1', category:'Sensory',  icon:'🪟', label:'Find 5 colors',         desc:'Look around and spot 5 different colored objects',       duration:'1 min', color:'#7A9E82' },
   { id:'s2', category:'Sensory',  icon:'👂', label:'Name 3 sounds',         desc:'Listen and identify at least 3 distinct sound sources',  duration:'1 min', color:'#7A8E9E' },
   { id:'s3', category:'Sensory',  icon:'☁️', label:'Watch the clouds',      desc:'Look at the sky and see what shapes you find',           duration:'1 min', color:'#8A9EAE' },
-  { id:'s4', category:'Sensory',  icon:'🔍', label:'Spot a new detail',     desc:"Find one thing in the room you've never noticed",        duration:'1 min', color:'#9E9A7A' },
   { id:'s5', category:'Sensory',  icon:'🧘', label:'Eyes closed 30s',       desc:'Close eyes 30 seconds, then list what you heard',       duration:'1 min', color:'#7A9E9A' },
   { id:'b1', category:'Movement', icon:'🏋️', label:'10 squats',            desc:'Do 10–20 slow squats, feel your legs working',           duration:'2 min', color:'#9E7A7A' },
   { id:'b2', category:'Movement', icon:'🤸', label:'Stretch 1 min',         desc:'Roll your shoulders, neck, or back',                    duration:'1 min', color:'#9E8A7A' },
-  { id:'b3', category:'Movement', icon:'🚶', label:'Walk 2 min',            desc:'Stand up and take a short walk around',                 duration:'2 min', color:'#7A8E9E' },
   { id:'b4', category:'Movement', icon:'🦩', label:'Balance on one foot',   desc:'Stand on one foot for 30 seconds',                      duration:'1 min', color:'#9E7A8A' },
   { id:'b5', category:'Movement', icon:'🌬️', label:'10 deep breaths',      desc:'Breathe slowly: 4 seconds in, 6 seconds out',           duration:'2 min', color:'#7C9E7A' },
-  { id:'c1', category:'Creative', icon:'📖', label:'Rewrite an ending',     desc:'Imagine a new ending for something you recently watched',duration:'3 min', color:'#8E7A9E' },
-  { id:'c2', category:'Creative', icon:'🦸', label:'Design a character',    desc:"Invent a new character — the weirder the better",        duration:'3 min', color:'#9E7A9A' },
-  { id:'c3', category:'Creative', icon:'✍️', label:'Write a 3-line story',  desc:'Make up a complete story in exactly 3 sentences',       duration:'3 min', color:'#9E9A7A' },
-  { id:'c4', category:'Creative', icon:'💡', label:'Invent something',      desc:'Imagine a new invention — what problem does it solve?', duration:'3 min', color:'#7A9E8E' },
   { id:'m1', category:'Memory',   icon:'🧠', label:'Recall yesterday',      desc:'Remember one thing you read or saw yesterday',          duration:'2 min', color:'#9E8A7A' },
   { id:'m2', category:'Memory',   icon:'📚', label:'Explain something',     desc:'Describe a piece of knowledge in your own words',       duration:'2 min', color:'#7A8A9E' },
   { id:'m3', category:'Memory',   icon:'🔤', label:'5 interesting words',   desc:'Recall or think of 5 interesting words',                duration:'2 min', color:'#8E9E7A' },
   { id:'m4', category:'Memory',   icon:'🎵', label:'Recall song lyrics',    desc:'Try to recall a full verse from memory',                duration:'2 min', color:'#9E7A7A' },
-  { id:'w1', category:'Writing',  icon:'🖊️', label:'One diary sentence',   desc:'Write one sentence capturing how you feel right now',   duration:'2 min', color:'#9E7A8A' },
-  { id:'w2', category:'Writing',  icon:'❓', label:'Write a question',      desc:"Write down something you'd like to research later",     duration:'1 min', color:'#7A9EAE' },
-  { id:'w3', category:'Writing',  icon:'😊', label:'Design an emoji',       desc:'Create a new emoji using text or symbols',              duration:'2 min', color:'#AE9E7A' },
-  { id:'w4', category:'Writing',  icon:'🎨', label:'Doodle something',      desc:'Draw a quick doodle — any topic at all',                duration:'3 min', color:'#7A9E82' },
   { id:'o1', category:'Tidy',     icon:'🗂️', label:'Tidy 5 things',        desc:'Put away 5 randomly placed items on your desk',         duration:'2 min', color:'#9E9A7A' },
   { id:'o2', category:'Tidy',     icon:'🖥️', label:'Clear desktop files',  desc:'Delete or archive old files cluttering your desktop',   duration:'3 min', color:'#7A8E9E' },
   { id:'o3', category:'Tidy',     icon:'📚', label:'Straighten books',      desc:'Neatly arrange the books or items next to you',         duration:'1 min', color:'#9E8A7A' },
@@ -295,19 +304,19 @@ function StepWelcome({ onNext }: { onNext:()=>void }) {
   return (
     <SafeAreaView style={st.screen}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
-      <ScrollView contentContainerStyle={st.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[st.scrollContent, {paddingTop:40, paddingBottom:48}]} showsVerticalScrollIndicator={false}>
         <Animated.View style={{opacity:anim}}>
-          <Text style={st.logoEmoji}>🪨</Text>
+          <AppLogo size={80} />
           <Tag label={S.welcome_tag} />
-          <Text style={st.brandName}>{ZH ? '先别 NotYet' : 'NotYet.'}</Text>
-          <Body style={{marginBottom:28}}>{S.welcome_tagline}</Body>
-          <View style={st.featuresBox}>
+          <Text style={[st.brandName, {fontSize:34, marginBottom:12}]}>{ZH ? '先别 NotYet' : 'NotYet.'}</Text>
+          <Body style={{marginBottom:32, fontSize:17, lineHeight:28}}>{S.welcome_tagline}</Body>
+          <View style={[st.featuresBox, {padding:22, marginBottom:32}]}>
             {S.features.map(([icon,t,d]) => (
-              <View key={t as string} style={st.featureRow}>
-                <Text style={st.featureIcon}>{icon}</Text>
+              <View key={t as string} style={[st.featureRow, {marginBottom:18}]}>
+                <Text style={[st.featureIcon, {fontSize:22}]}>{icon}</Text>
                 <View style={{flex:1}}>
-                  <Text style={st.featureTitle}>{t}</Text>
-                  <Text style={st.featureDesc}>{d}</Text>
+                  <Text style={[st.featureTitle, {fontSize:15, marginBottom:4}]}>{t}</Text>
+                  <Text style={[st.featureDesc, {fontSize:13, lineHeight:20}]}>{d}</Text>
                 </View>
               </View>
             ))}
@@ -321,48 +330,33 @@ function StepWelcome({ onNext }: { onNext:()=>void }) {
 
 // ─── STEP: PERMISSION ───
 function StepPermission({ onNext, onBack }: { onNext:()=>void; onBack:()=>void }) {
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    const check = setInterval(async () => {
-      try {
-        const ok = await AccessibilityModule.isAccessibilityEnabled();
-        setEnabled(ok);
-      } catch {}
-    }, 1500);
-    return () => clearInterval(check);
-  }, []);
-
   return (
     <SafeAreaView style={st.screen}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
-      <ScrollView contentContainerStyle={st.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[st.scrollContent, {paddingTop:32}]} showsVerticalScrollIndicator={false}>
         <View style={st.stepHeader}>
           <BackBtn onPress={onBack} />
           <Dots total={4} cur={0} />
           <View style={{width:40}} />
         </View>
-        <View style={st.interceptDiagram}>
-          <Text style={st.diagramApp}>🎵</Text>
-          <View style={st.diagramArrow}><Text style={st.diagramLogo}>🪨</Text></View>
-          <Text style={st.diagramApp}>🧘</Text>
+        <View style={[st.interceptDiagram, {padding:28, marginBottom:28, borderRadius:24}]}>
+          <Text style={{fontSize:36}}>🎵</Text>
+          <View style={{paddingHorizontal:16}}><AppLogo size={36} /></View>
+          <Text style={{fontSize:36}}>🧘</Text>
         </View>
         <Tag label={S.perm_tag} />
-        <Title>{S.perm_title}</Title>
-        <Body style={{marginBottom:16}}>{S.perm_body}</Body>
-        <View style={st.permPoints}>
+        <Title style={{fontSize:26, lineHeight:38, marginBottom:12}}>{S.perm_title}</Title>
+        <Body style={{marginBottom:24, fontSize:16, lineHeight:26}}>{S.perm_body}</Body>
+        <View style={[st.permPoints, {marginBottom:32, paddingLeft:18}]}>
           {S.perm_points.map((p,i) => (
-            <View key={i} style={st.permRow}>
-              <Text style={st.permCheck}>✓</Text>
-              <Text style={st.permText}>{p}</Text>
+            <View key={i} style={[st.permRow, {marginBottom:14}]}>
+              <Text style={[st.permCheck, {fontSize:16}]}>✓</Text>
+              <Text style={[st.permText, {fontSize:15, lineHeight:24}]}>{p}</Text>
             </View>
           ))}
         </View>
         <View style={{flex:1, minHeight:24}} />
-        {enabled
-          ? <PrimaryBtn onPress={onNext} label={S.perm_check} />
-          : <PrimaryBtn onPress={() => AccessibilityModule.openAccessibilitySettings()} label={S.perm_cta} />
-        }
+        <PrimaryBtn onPress={onNext} label={S.perm_check} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -371,44 +365,88 @@ function StepPermission({ onNext, onBack }: { onNext:()=>void; onBack:()=>void }
 // ─── STEP: GUIDE ───
 function StepGuide({ onNext, onBack }: { onNext:()=>void; onBack:()=>void }) {
   const [active, setActive] = useState(0);
+  const [waitingForPermission, setWaitingForPermission] = useState(false);
   const steps = S.guide_steps;
+
+  // Poll for accessibility permission once user has been sent to settings
+  useEffect(() => {
+    if (!waitingForPermission) return;
+    const check = setInterval(async () => {
+      try {
+        const ok = await AccessibilityModule.isAccessibilityEnabled();
+        if (ok) {
+          clearInterval(check);
+          onNext(); // auto-jump to Customize
+        }
+      } catch {}
+    }, 1200);
+    return () => clearInterval(check);
+  }, [waitingForPermission]);
+
+  const handleNext = () => {
+    if (active < steps.length - 1) {
+      setActive(a => a + 1);
+    } else {
+      // Last step: open system accessibility settings and start polling
+      AccessibilityModule.openAccessibilitySettings();
+      setWaitingForPermission(true);
+    }
+  };
+
   return (
     <SafeAreaView style={st.screen}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
-      <ScrollView contentContainerStyle={st.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[st.scrollContent, {paddingTop:32}]} showsVerticalScrollIndicator={false}>
         <View style={st.stepHeader}>
           <BackBtn onPress={onBack} />
           <Dots total={4} cur={1} />
           <View style={{width:40}} />
         </View>
         <Tag label={S.guide_tag} />
-        <Title style={{marginBottom:20}}>{S.guide_title}</Title>
+        <Title style={{marginBottom:24, fontSize:24, lineHeight:36}}>{S.guide_title}</Title>
         {steps.map((step,i) => (
           <TouchableOpacity key={i} onPress={() => setActive(i)} activeOpacity={0.8}
-            style={[st.guideStep, active===i && st.guideStepActive]}>
-            <View style={[st.guideNum, i<active && st.guideNumDone, active===i && st.guideNumCur]}>
-              <Text style={st.guideNumText}>{i<active ? '✓' : i+1}</Text>
+            style={[st.guideStep, {padding:16, marginBottom:10}, active===i && st.guideStepActive]}>
+            <View style={[st.guideNum, {width:34, height:34, borderRadius:10}, i<active && st.guideNumDone, active===i && st.guideNumCur]}>
+              <Text style={[st.guideNumText, {fontSize:14}]}>{i<active ? '✓' : i+1}</Text>
             </View>
             <View style={{flex:1}}>
-              <Text style={st.guideTitle}>{step.icon} {step.title}</Text>
+              <Text style={[st.guideTitle, {fontSize:16}]}>{step.icon} {step.title}</Text>
               {active===i && <>
-                <Text style={st.guideDesc}>{step.desc}</Text>
-                {step.note && <View style={st.guideNote}><Text style={st.guideNoteText}>{step.note}</Text></View>}
+                <Text style={[st.guideDesc, {fontSize:14, lineHeight:22, marginTop:6}]}>{step.desc}</Text>
+                {step.note && <View style={[st.guideNote, {padding:12, marginTop:10}]}><Text style={[st.guideNoteText, {fontSize:12, lineHeight:20}]}>{step.note}</Text></View>}
               </>}
             </View>
           </TouchableOpacity>
         ))}
-        <View style={st.guideBtns}>
-          {active < steps.length-1 ? <>
-            <TouchableOpacity onPress={()=>setActive(a=>Math.max(0,a-1))} disabled={active===0}
-              style={[st.guideSecBtn, active===0 && {opacity:0.3}]}>
-              <Text style={st.guideSecBtnText}>{S.guide_prev}</Text>
+
+        {/* Waiting hint when user has been sent to system settings */}
+        {waitingForPermission && (
+          <View style={{backgroundColor:C.sand, borderRadius:16, padding:16, marginTop:14, marginBottom:10, flexDirection:'row', gap:12, alignItems:'center'}}>
+            <Text style={{fontSize:20}}>⏳</Text>
+            <Text style={{fontSize:13, color:C.muted, fontFamily:F.mono, flex:1, lineHeight:20}}>
+              {ZH ? '请在系统设置中开启 先别NotYet 的无障碍权限，开启后将自动继续...' : 'Please enable NotYet in system Accessibility settings. Will continue automatically...'}
+            </Text>
+          </View>
+        )}
+
+        <View style={[st.guideBtns, {marginTop:14}]}>
+          {active > 0 && (
+            <TouchableOpacity onPress={()=>setActive(a=>Math.max(0,a-1))}
+              style={[st.guideSecBtn, {padding:15}]}>
+              <Text style={[st.guideSecBtnText, {fontSize:14}]}>{S.guide_prev}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={()=>setActive(a=>Math.min(steps.length-1,a+1))}
-              style={st.guideNextBtn}>
-              <Text style={st.guideNextBtnText}>{S.guide_next}</Text>
-            </TouchableOpacity>
-          </> : <PrimaryBtn onPress={onNext} label={S.guide_done} />}
+          )}
+          <TouchableOpacity onPress={handleNext}
+            style={[st.guideNextBtn, {padding:15}, active === 0 && {flex:1}]}>
+            <Text style={[st.guideNextBtnText, {fontSize:15}]}>
+              {active < steps.length - 1
+                ? S.guide_next
+                : waitingForPermission
+                  ? (ZH ? '重新打开设置' : 'Reopen Settings')
+                  : S.perm_cta}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -455,26 +493,27 @@ function StepPickActivities({ onNext, onBack }: { onNext:(acts:Activity[])=>void
         <View style={{width:40}} />
       </View>
       <Tag label={S.pick_tag} />
-      <Title>{S.pick_title}</Title>
-      <Body style={{marginBottom:10}}>{S.pick_subtitle}</Body>
+      <Title style={{fontSize:24, lineHeight:34}}>{S.pick_title}</Title>
+      <Body style={{marginBottom:12, fontSize:14, lineHeight:22}}>{S.pick_subtitle}</Body>
 
-      {/* Category tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{marginBottom:10, maxHeight:36, flexShrink:0}}>
+      {/* Category tabs — 2 rows, 3 per row */}
+      <View style={{flexDirection:'row', flexWrap:'wrap', gap:8, marginBottom:12}}>
         {cats.map(c => {
           if (c===S.pick_my_tab && customCount===0) return null;
           return (
             <TouchableOpacity key={c} onPress={()=>setCat(c)} activeOpacity={0.8}
-              style={[st.catTab, cat===c && st.catTabActive]}>
-              <Text style={[st.catTabText, cat===c && st.catTabTextActive]}>
+              style={[st.catTab, {height:36, paddingHorizontal:0, marginRight:0, width:(SW-48-16)/3, alignItems:'center'}, cat===c && st.catTabActive]}>
+              <Text style={[st.catTabText, {fontSize:12, textAlign:'center'}, cat===c && st.catTabTextActive]}>
                 {c}{c===S.pick_my_tab ? ` ${customCount}` : ''}
               </Text>
             </TouchableOpacity>
           );
         })}
-        <TouchableOpacity onPress={()=>setShowModal(true)} activeOpacity={0.8} style={st.catTabAdd}>
-          <Text style={st.catTabAddText}>{S.pick_add}</Text>
+        <TouchableOpacity onPress={()=>setShowModal(true)} activeOpacity={0.8}
+          style={[st.catTabAdd, {paddingHorizontal:0, marginRight:0, width:(SW-48-16)/3, height:36, alignItems:'center', justifyContent:'center'}]}>
+          <Text style={[st.catTabAddText, {fontSize:12}]}>{S.pick_add}</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       {/* Activity list */}
       <ScrollView style={{flex:1}} showsVerticalScrollIndicator={false}>
@@ -489,16 +528,16 @@ function StepPickActivities({ onNext, onBack }: { onNext:(acts:Activity[])=>void
           const isFull = selected.size >= MAX && !isSel;
           return (
             <TouchableOpacity key={act.id} onPress={()=>toggle(act.id)} disabled={isFull}
-              activeOpacity={0.8} style={[st.actCard, isSel && {backgroundColor:act.color}, isFull && {opacity:0.4}]}>
-              <View style={[st.actIcon, isSel && {backgroundColor:'rgba(255,255,255,0.25)'}]}>
-                <Text style={{fontSize:20}}>{act.icon}</Text>
+              activeOpacity={0.8} style={[st.actCard, {padding:14}, isSel && {backgroundColor:act.color}, isFull && {opacity:0.4}]}>
+              <View style={[st.actIcon, {width:46, height:46, borderRadius:14}, isSel && {backgroundColor:'rgba(255,255,255,0.25)'}]}>
+                <Text style={{fontSize:22}}>{act.icon}</Text>
               </View>
               <View style={{flex:1}}>
-                <Text style={[st.actLabel, isSel && {color:'#fff'}]}>{act.label}</Text>
-                <Text style={[st.actDesc, isSel && {color:'rgba(255,255,255,0.78)'}]}>{act.desc}</Text>
+                <Text style={[st.actLabel, {fontSize:15}, isSel && {color:'#fff'}]}>{act.label}</Text>
+                <Text style={[st.actDesc, {fontSize:12, lineHeight:18}, isSel && {color:'rgba(255,255,255,0.78)'}]}>{act.desc}</Text>
               </View>
               <View style={{alignItems:'flex-end', gap:4}}>
-                <Text style={[st.actDuration, isSel && {color:'rgba(255,255,255,0.65)'}]}>{act.duration}</Text>
+                <Text style={[st.actDuration, {fontSize:11}, isSel && {color:'rgba(255,255,255,0.65)'}]}>{act.duration}</Text>
                 <View style={[st.actCheck, isSel && {backgroundColor:'rgba(255,255,255,0.9)', borderWidth:0}]}>
                   {isSel && <Text style={[st.actCheckMark, {color:act.color}]}>✓</Text>}
                 </View>
@@ -635,26 +674,26 @@ function StepSelectApps({ onNext, onBack }: { onNext:(apps:string[])=>void; onBa
           <View style={{width:40}} />
         </View>
         <Tag label={S.apps_tag} />
-        <Title>{S.apps_title}</Title>
-        <Body style={{marginBottom:20}}>{S.apps_subtitle}</Body>
-        <View style={st.appGrid}>
+        <Title style={{fontSize:24, lineHeight:36}}>{S.apps_title}</Title>
+        <Body style={{marginBottom:24, fontSize:15, lineHeight:24}}>{S.apps_subtitle}</Body>
+        <View style={[st.appGrid, {gap:16, marginBottom:20}]}>
           {APPS.map(app => {
             const on = sel.has(app.name);
             return (
               <TouchableOpacity key={app.name} onPress={()=>toggle(app.name)} activeOpacity={0.8}
-                style={st.appItem}>
-                <View style={[st.appIcon, on && st.appIconOn]}>
-                  <Text style={{fontSize:26}}>{app.icon}</Text>
+                style={[st.appItem, {gap:8}]}>
+                <View style={[st.appIcon, {width:64, height:64, borderRadius:19}, on && st.appIconOn]}>
+                  <Text style={{fontSize:28}}>{app.icon}</Text>
                   {on && <View style={st.appCheck}><Text style={{fontSize:9,color:'#fff'}}>✓</Text></View>}
                 </View>
-                <Text style={[st.appName, on && {color:C.ink, fontWeight:'600'}]}>{app.name}</Text>
+                <Text style={[st.appName, {fontSize:12}, on && {color:C.ink, fontWeight:'600'}]}>{app.name}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-        <View style={st.tipBox}>
-          <Text style={{fontSize:14}}>💡</Text>
-          <Text style={st.tipText}>{S.apps_tip(sel.size)}</Text>
+        <View style={[st.tipBox, {padding:14, marginBottom:18}]}>
+          <Text style={{fontSize:16}}>💡</Text>
+          <Text style={[st.tipText, {fontSize:13, lineHeight:20}]}>{S.apps_tip(sel.size)}</Text>
         </View>
         <PrimaryBtn onPress={()=>onNext([...sel])} disabled={sel.size===0} label={S.apps_cta} />
       </ScrollView>
@@ -679,14 +718,14 @@ function StepTimeRange({ onNext, onBack }: { onNext:(tr:any)=>void; onBack:()=>v
           <View style={{width:40}} />
         </View>
         <Tag label={S.time_tag} />
-        <Title>{S.time_title}</Title>
-        <Body style={{marginBottom:20}}>{S.time_subtitle}</Body>
+        <Title style={{fontSize:24, lineHeight:36}}>{S.time_title}</Title>
+        <Body style={{marginBottom:24, fontSize:15, lineHeight:24}}>{S.time_subtitle}</Body>
 
         {/* Toggle */}
-        <View style={st.toggleRow}>
+        <View style={[st.toggleRow, {padding:18}]}>
           <View>
-            <Text style={st.toggleLabel}>{S.time_toggle}</Text>
-            <Text style={st.toggleSub}>{S.time_toggle_sub}</Text>
+            <Text style={[st.toggleLabel, {fontSize:16}]}>{S.time_toggle}</Text>
+            <Text style={[st.toggleSub, {fontSize:12}]}>{S.time_toggle_sub}</Text>
           </View>
           <Toggle value={enabled} onChange={setEnabled} />
         </View>
@@ -766,23 +805,25 @@ function StepDone({ onFinish }: { onFinish:()=>void }) {
     <SafeAreaView style={[st.screen, {backgroundColor:C.ink}]}>
       <StatusBar barStyle="light-content" backgroundColor={C.ink} />
       <View style={[st.scrollContent, {flex:1, justifyContent:'center', alignItems:'center'}]}>
-        <Animated.Text style={[st.logoEmoji, {transform:[{scale:pulse}], marginBottom:24}]}>🪨</Animated.Text>
+        <Animated.View style={{transform:[{scale:pulse}], marginBottom:24}}>
+          <AppLogo size={88} light />
+        </Animated.View>
         <Tag label={S.done_tag} />
-        <Text style={[st.brandName, {color:C.cream}]}>{ZH ? '先别 NotYet' : 'NotYet.'}</Text>
-        <Body style={{color:'rgba(245,240,232,0.65)', textAlign:'center', marginBottom:32}}>{S.done_body}</Body>
-        <View style={st.statsBox}>
+        <Text style={[st.brandName, {color:C.cream, fontSize:36, marginBottom:14}]}>{ZH ? '先别 NotYet' : 'NotYet.'}</Text>
+        <Body style={{color:'rgba(245,240,232,0.65)', textAlign:'center', marginBottom:40, fontSize:17, lineHeight:30}}>{S.done_body}</Body>
+        <View style={[st.statsBox, {padding:24, marginBottom:36, borderRadius:22}]}>
           {(ZH
             ? [['0','次拦截'],['0 min','已节省'],['—','微活动']]
             : [['0','intercepts'],['0 min','saved'],['—','activities']]
           ).map(([v,l]) => (
             <View key={l} style={{alignItems:'center'}}>
-              <Text style={st.statVal}>{v}</Text>
-              <Text style={st.statLabel}>{l}</Text>
+              <Text style={[st.statVal, {fontSize:24}]}>{v}</Text>
+              <Text style={[st.statLabel, {fontSize:11}]}>{l}</Text>
             </View>
           ))}
         </View>
         <TouchableOpacity onPress={onFinish} activeOpacity={0.85} style={st.doneBtn}>
-          <Text style={st.doneBtnText}>{S.done_cta}</Text>
+          <Text style={[st.doneBtnText, {fontSize:17}]}>{S.done_cta}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -847,16 +888,16 @@ function RuntimeIntercept({ myActivities, timeRange, sourcePackage, onReset }:
       <SafeAreaView style={st.screen}>
         <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
         <View style={[st.scrollContent, {flex:1, justifyContent:'center', alignItems:'center'}]}>
-          <Text style={{fontSize:44, marginBottom:18}}>🌙</Text>
+          <Text style={{fontSize:56, marginBottom:22}}>🌙</Text>
           <Tag label={ZH ? '拦截未激活' : 'NOT ACTIVE'} />
-          <Title style={{textAlign:'center'}}>{ZH ? '现在自由时间' : 'Free time now'}</Title>
-          <Body style={{textAlign:'center', maxWidth:260}}>
+          <Title style={{textAlign:'center', fontSize:26, lineHeight:36}}>{ZH ? '现在自由时间' : 'Free time now'}</Title>
+          <Body style={{textAlign:'center', maxWidth:280, fontSize:16, lineHeight:28}}>
             {ZH
               ? `先别NotYet 在 ${startH}:00 — ${endH}:00 之间守护你。\n现在随意，好好享受。`
               : `NotYet guards you between ${startH}:00 — ${endH}:00.\nEnjoy your free time.`}
           </Body>
-          <TouchableOpacity onPress={onReset} style={{marginTop:28}}>
-            <Text style={st.backBtn}>{S.reset}</Text>
+          <TouchableOpacity onPress={onReset} style={{marginTop:36}}>
+            <Text style={[st.backBtn, {fontSize:14}]}>{S.reset}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -866,33 +907,33 @@ function RuntimeIntercept({ myActivities, timeRange, sourcePackage, onReset }:
   if (phase==='intercept') return (
     <SafeAreaView style={st.screen}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
-      <ScrollView contentContainerStyle={[st.scrollContent, {alignItems:'center'}]} showsVerticalScrollIndicator={false}>
-        <Text style={st.tag}>{tod()}</Text>
-        <Text style={[st.title, {textAlign:'center', marginBottom:20, maxWidth:SW-60}]}>{prompt}</Text>
-        <View style={{width:36, height:1, backgroundColor:C.border, marginBottom:24}} />
+      <ScrollView contentContainerStyle={[st.scrollContent, {alignItems:'center', paddingTop:36}]} showsVerticalScrollIndicator={false}>
+        <Text style={[st.tag, {fontSize:12}]}>{tod()}</Text>
+        <Text style={[st.title, {textAlign:'center', marginBottom:24, maxWidth:SW-48, fontSize:24, lineHeight:36}]}>{prompt}</Text>
+        <View style={{width:40, height:1.5, backgroundColor:C.border, marginBottom:28}} />
 
-        <Animated.View style={[st.countdown, {transform:[{scale:breathe}]}]}>
-          <View style={st.countdownInner}>
-            <Text style={st.countdownText}>{countdown>0 ? countdown : '✓'}</Text>
+        <Animated.View style={[st.countdown, {width:88, height:88, borderRadius:44, transform:[{scale:breathe}]}]}>
+          <View style={[st.countdownInner, {width:64, height:64, borderRadius:32}]}>
+            <Text style={[st.countdownText, {fontSize:24}]}>{countdown>0 ? countdown : '✓'}</Text>
           </View>
         </Animated.View>
-        <Text style={[st.tag, {marginBottom:24}]}>{countdown>0 ? S.intercept_pausing : S.intercept_ready}</Text>
+        <Text style={[st.tag, {marginBottom:28, fontSize:11}]}>{countdown>0 ? S.intercept_pausing : S.intercept_ready}</Text>
 
-        <Text style={[st.tag, {marginBottom:10}]}>{S.intercept_activities}</Text>
+        <Text style={[st.tag, {marginBottom:12, fontSize:11}]}>{S.intercept_activities}</Text>
         <View style={st.actGrid}>
           {myActivities.map(act => (
             <TouchableOpacity key={act.id} onPress={()=>{setSelected(act);setPhase('doing');}}
-              activeOpacity={0.8} style={st.actGridItem}>
-              <Text style={{fontSize:20, marginBottom:4}}>{act.icon}</Text>
-              <Text style={st.actGridLabel}>{act.label}</Text>
-              <Text style={st.actGridDur}>{act.duration}</Text>
+              activeOpacity={0.8} style={[st.actGridItem, {padding:14}]}>
+              <Text style={{fontSize:24, marginBottom:6}}>{act.icon}</Text>
+              <Text style={[st.actGridLabel, {fontSize:14}]}>{act.label}</Text>
+              <Text style={[st.actGridDur, {fontSize:11}]}>{act.duration}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         <TouchableOpacity onPress={launchAndBypass} disabled={!bypassReady}
-          activeOpacity={0.7} style={[st.bypassBtn, !bypassReady && {opacity:0.4}]}>
-          <Text style={st.bypassBtnText}>
+          activeOpacity={0.7} style={[st.bypassBtn, {padding:15}, !bypassReady && {opacity:0.4}]}>
+          <Text style={[st.bypassBtnText, {fontSize:13}]}>
             {bypassReady ? S.intercept_bypass : S.intercept_waiting(countdown)}
           </Text>
         </TouchableOpacity>
@@ -904,20 +945,20 @@ function RuntimeIntercept({ myActivities, timeRange, sourcePackage, onReset }:
     <SafeAreaView style={[st.screen, {backgroundColor:selected.color}]}>
       <StatusBar barStyle="light-content" backgroundColor={selected.color} />
       <View style={[st.scrollContent, {flex:1, justifyContent:'center', alignItems:'center'}]}>
-        <Text style={{fontSize:72, marginBottom:20}}>{selected.icon}</Text>
-        <Text style={[st.tag, {color:'rgba(255,255,255,0.7)'}]}>{S.doing_tag}</Text>
-        <Text style={[st.title, {color:'#fff', textAlign:'center', fontSize:28}]}>{selected.label}</Text>
-        <Text style={[st.body, {color:'rgba(255,255,255,0.82)', textAlign:'center', maxWidth:260, marginBottom:28}]}>{selected.desc}</Text>
-        <View style={st.durationBox}>
-          <Text style={[st.tag, {color:'rgba(255,255,255,0.65)'}]}>{S.doing_duration}</Text>
-          <Text style={{fontSize:22, color:'#fff', fontWeight:'600', fontFamily:F.serif}}>{selected.duration}</Text>
+        <Text style={{fontSize:80, marginBottom:24}}>{selected.icon}</Text>
+        <Text style={[st.tag, {color:'rgba(255,255,255,0.7)', fontSize:11}]}>{S.doing_tag}</Text>
+        <Text style={[st.title, {color:'#fff', textAlign:'center', fontSize:32, lineHeight:42, marginBottom:12}]}>{selected.label}</Text>
+        <Text style={[st.body, {color:'rgba(255,255,255,0.82)', textAlign:'center', maxWidth:280, marginBottom:32, fontSize:16, lineHeight:26}]}>{selected.desc}</Text>
+        <View style={[st.durationBox, {paddingVertical:18, paddingHorizontal:36}]}>
+          <Text style={[st.tag, {color:'rgba(255,255,255,0.65)', fontSize:11}]}>{S.doing_duration}</Text>
+          <Text style={{fontSize:26, color:'#fff', fontWeight:'600', fontFamily:F.serif}}>{selected.duration}</Text>
         </View>
         <TouchableOpacity onPress={()=>{setPhase('intercept');setCountdown(5);setBypassReady(false);}}
-          activeOpacity={0.85} style={[st.primaryBtn, {backgroundColor:'rgba(255,255,255,0.95)', marginTop:32}]}>
-          <Text style={[st.primaryBtnText, {color:C.ink}]}>{S.doing_done}</Text>
+          activeOpacity={0.85} style={[st.primaryBtn, {backgroundColor:'rgba(255,255,255,0.95)', marginTop:36}]}>
+          <Text style={[st.primaryBtnText, {color:C.ink, fontSize:16}]}>{S.doing_done}</Text>
         </TouchableOpacity>
         <GhostBtn onPress={launchAndBypass} label={S.doing_skip}
-          style={{borderColor:'rgba(255,255,255,0.35)', marginTop:10}} />
+          style={{borderColor:'rgba(255,255,255,0.35)', marginTop:12}} />
       </View>
     </SafeAreaView>
   );
@@ -926,17 +967,17 @@ function RuntimeIntercept({ myActivities, timeRange, sourcePackage, onReset }:
     <SafeAreaView style={st.screen}>
       <StatusBar barStyle="dark-content" backgroundColor={C.cream} />
       <View style={[st.scrollContent, {flex:1, justifyContent:'center', alignItems:'center'}]}>
-        <Text style={{fontSize:44, marginBottom:18}}>👋</Text>
-        <Title style={{textAlign:'center'}}>{S.bypass_title}</Title>
-        <Body style={{textAlign:'center', maxWidth:250, marginBottom:32}}>{S.bypass_body}</Body>
-        <View style={st.statsBox}>
+        <Text style={{fontSize:52, marginBottom:22}}>👋</Text>
+        <Title style={{textAlign:'center', fontSize:26, lineHeight:36}}>{S.bypass_title}</Title>
+        <Body style={{textAlign:'center', maxWidth:280, marginBottom:36, fontSize:16, lineHeight:28}}>{S.bypass_body}</Body>
+        <View style={[st.statsBox, {padding:22, borderRadius:22, marginBottom:32}]}>
           {(ZH
             ? [['1','次拦截'],['0','微活动'],['—','节省时间']]
             : [['1','intercepts'],['0','activities'],['—','time saved']]
           ).map(([v,l]) => (
             <View key={l} style={{alignItems:'center'}}>
-              <Text style={[st.statVal, {color:C.ink}]}>{v}</Text>
-              <Text style={[st.statLabel, {color:C.muted}]}>{l}</Text>
+              <Text style={[st.statVal, {color:C.ink, fontSize:24}]}>{v}</Text>
+              <Text style={[st.statLabel, {color:C.muted, fontSize:11}]}>{l}</Text>
             </View>
           ))}
         </View>
@@ -973,7 +1014,7 @@ export default function App() {
   if (step === -1) {
     return (
       <SafeAreaView style={[st.screen, {justifyContent:'center', alignItems:'center'}]}>
-        <Text style={{fontSize:40}}>🪨</Text>
+        <AppLogo size={56} />
       </SafeAreaView>
     );
   }

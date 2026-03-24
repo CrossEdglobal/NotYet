@@ -94,6 +94,22 @@ class AccessibilityModule(private val reactContext: ReactApplicationContext) :
         }
     }
 
+    // 同步暴露系统语言给 JS
+    override fun getConstants(): Map<String, Any> {
+        val locale = java.util.Locale.getDefault()
+        return mapOf("systemLanguage" to locale.language)
+    }
+
+    @ReactMethod
+    fun getSystemLanguage(promise: Promise) {
+        try {
+            val locale = java.util.Locale.getDefault()
+            promise.resolve(locale.language)
+        } catch (e: Exception) {
+            promise.resolve("en")
+        }
+    }
+
     private fun isServiceEnabled(): Boolean {
         val serviceName = "${reactContext.packageName}/${NotYetAccessibilityService::class.java.canonicalName}"
         val enabledServices = Settings.Secure.getString(
